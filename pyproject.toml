@@ -22,3 +22,9 @@ pytest-django = "^4.5.2"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+addopts = "-s"
+DJANGO_SETTINGS_MODULE = "tests.django.django_settings"
+testpaths = ["tests/"]
+markers = ["django"]
