@@ -1,11 +1,23 @@
 [tool.poetry]
 name = "graphql-sync-dataloaders"
 version = "0.1.0"
-description = ""
-authors = ["Jonathan Kim <jkimbo@gmail.com>"]
+description = "Use DataLoaders in your Python GraphQL servers that have to run in a sync context (i.e. Django)."
+authors = ["Jonathan Kim <hello@jkimbo.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [{include = "graphql_sync_dataloaders"}]
+keywords = ["graphql", "Django", "strawberry-graphql"]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: OSI Approved :: MIT License",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/jkimbo/graphql-sync-dataloaders"
 
 [tool.poetry.dependencies]
 python = "^3.8"
