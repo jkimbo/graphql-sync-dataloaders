@@ -6,11 +6,11 @@ from graphql_sync_dataloaders import DeferredExecutionContext, SyncDataLoader
 
 from .app import models
 from .app.graphene_schema import Query
+from .app.dataloaders import load_authors
 
 
-@pytest.mark.django_db
-def test_sync_dataloader(django_assert_num_queries):
-    # setup data
+@pytest.fixture
+def book_data():
     jane_austin = models.Author.objects.create(
         name="Jane Austin",
     )
@@ -31,12 +31,10 @@ def test_sync_dataloader(django_assert_num_queries):
         author=virginia_wolf,
     )
 
-    schema = graphene.Schema(query=Query)
 
-    def load_authors(keys):
-        qs = models.Author.objects.filter(id__in=keys)
-        author_map = {author.id: author for author in qs}
-        return [author_map.get(author_id, None) for author_id in keys]
+@pytest.mark.django_db
+def test_sync_dataloader(book_data, django_assert_num_queries):
+    schema = graphene.Schema(query=Query)
 
     mock_load_fn = Mock(wraps=load_authors)
     dataloader = SyncDataLoader(mock_load_fn)
@@ -85,3 +83,49 @@ def test_sync_dataloader(django_assert_num_queries):
     }
 
     assert mock_load_fn.call_count == 1
+
+
+@pytest.mark.django_db
+def test_sync_dataloader_view(book_data, client, django_assert_num_queries):
+    with django_assert_num_queries(2):
+        response = client.post(
+            "/graphene-graphql",
+            {
+                "query": """
+                    query {
+                        allBooks {
+                            title
+                            author {
+                                name
+                            }
+                        }
+                    }
+                """,
+            },
+        )
+
+        assert response.status_code == 200
+        result = response.json()
+        assert "errors" not in result
+        assert result["data"] == {
+            "allBooks": [
+                {
+                    "title": "Pride and Prejudice",
+                    "author": {
+                        "name": "Jane Austin",
+                    },
+                },
+                {
+                    "title": "Mansfield Park",
+                    "author": {
+                        "name": "Jane Austin",
+                    },
+                },
+                {
+                    "title": "Mrs. Dalloway",
+                    "author": {
+                        "name": "Virginia Wolf",
+                    },
+                },
+            ],
+        }
