@@ -123,27 +123,28 @@ test = ["coveralls (>=3.3,<4)", "iso8601 (>=1,<2)", "mock (>=4,<5)", "promise (>
 
 [[package]]
 name = "graphene-django"
-version = "3.0.0b7"
+version = "3.0.0b8"
 description = "Graphene Django integration"
 category = "dev"
 optional = false
 python-versions = "*"
 
 [package.dependencies]
-Django = ">=2.2"
-graphene = ">=3.0.0b5,<4"
+Django = ">=3.2"
+graphene = ">=3.0,<4"
 graphql-core = ">=3.1.0,<4"
+graphql-relay = ">=3.1.1,<4"
 promise = ">=2.1"
 text-unidecode = "*"
 
 [package.extras]
-dev = ["black (==19.10b0)", "coveralls", "django-filter (>=2)", "djangorestframework (>=3.6.3)", "flake8 (==3.7.9)", "flake8-black (==0.1.1)", "flake8-bugbear (==20.1.4)", "mock", "pytest (>=3.6.3)", "pytest-cov", "pytest-django (>=3.3.2)", "pytest-random-order", "pytz"]
+dev = ["black (==22.8.0)", "coveralls", "django-filter (>=22.1)", "djangorestframework (>=3.6.3)", "flake8 (==5.0.4)", "flake8-black (==0.3.3)", "flake8-bugbear (==22.9.11)", "mock", "pytest (>=7.1.3)", "pytest-cov", "pytest-django (>=4.5.2)", "pytest-random-order", "pytz"]
 rest_framework = ["djangorestframework (>=3.6.3)"]
-test = ["coveralls", "django-filter (>=2)", "djangorestframework (>=3.6.3)", "mock", "pytest (>=3.6.3)", "pytest-cov", "pytest-django (>=3.3.2)", "pytest-random-order", "pytz"]
+test = ["coveralls", "django-filter (>=22.1)", "djangorestframework (>=3.6.3)", "mock", "pytest (>=7.1.3)", "pytest-cov", "pytest-django (>=4.5.2)", "pytest-random-order", "pytz"]
 
 [[package]]
 name = "graphql-core"
-version = "3.2.2"
+version = "3.2.3"
 description = "GraphQL implementation for Python, a port of GraphQL.js, the JavaScript reference implementation for GraphQL."
 category = "main"
 optional = false
@@ -400,7 +401,7 @@ python-versions = ">=2"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "36adc45db548166ece78b9c964ddd8557602446ebdfb3f611c3eedcd2bca40b1"
+content-hash = "90473beb0ba15c2dbb41a5dfa11b30246f6302fe732f550dc061b8fc7207d0bc"
 
 [metadata.files]
 aniso8601 = [
@@ -475,12 +476,12 @@ graphene = [
     {file = "graphene-3.1.1.tar.gz", hash = "sha256:ff251dbc39a6409106c41de444358d93b2c5588d161dce2245bea7d74b445c86"},
 ]
 graphene-django = [
-    {file = "graphene-django-3.0.0b7.tar.gz", hash = "sha256:b1a4ce1a2227b1e77f67f0bc2fadd59c1d05016cb9aced45ab65f8612fba2c87"},
-    {file = "graphene_django-3.0.0b7-py2.py3-none-any.whl", hash = "sha256:0f226ec7db744a54dbc5d6db2aa52d945701ae800e1055046dec2b76a539550a"},
+    {file = "graphene-django-3.0.0b8.tar.gz", hash = "sha256:fe8771589ce7fd7196849dceddcd762cc50217e9932e697ff49b93fd3875ae53"},
+    {file = "graphene_django-3.0.0b8-py2.py3-none-any.whl", hash = "sha256:6f2c32a7ae688f16a6203b740827c1595d707704eae61d352b64939acd00f97d"},
 ]
 graphql-core = [
-    {file = "graphql-core-3.2.2.tar.gz", hash = "sha256:c56635ce67757069f317da85efcfd2f3f86cf1d26a06daf64402d89ed3a527c5"},
-    {file = "graphql_core-3.2.2-py3-none-any.whl", hash = "sha256:4672711cb0f10013df464e450bda006fc449eca90d17a54a7c1103322e246c49"},
+    {file = "graphql-core-3.2.3.tar.gz", hash = "sha256:06d2aad0ac723e35b1cb47885d3e5c45e956a53bc1b209a9fc5369007fe46676"},
+    {file = "graphql_core-3.2.3-py3-none-any.whl", hash = "sha256:5766780452bd5ec8ba133f8bf287dc92713e3868ddd83aee4faab9fc3e303dc3"},
 ]
 graphql-relay = [
     {file = "graphql-relay-3.2.0.tar.gz", hash = "sha256:1ff1c51298356e481a0be009ccdff249832ce53f30559c1338f22a0e0d17250c"},
