@@ -345,7 +345,7 @@ class DeferredExecutionContext(ExecutionContext):
                                 future.set_result(results)
 
                         unresolved += 1
-                        completed.add_callback(
+                        completed.add_done_callback(
                             partial(process_completed, index, completed, item_path)
                         )
                 else:
