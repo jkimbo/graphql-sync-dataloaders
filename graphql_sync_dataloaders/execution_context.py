@@ -35,6 +35,9 @@ from graphql.execution.values import get_argument_values
 from .sync_future import SyncFuture
 
 
+PENDING_FUTURE = object()
+
+
 class DeferredExecutionContext(ExecutionContext):
     """Execution for working with synchronous Futures.
 
@@ -84,12 +87,17 @@ class DeferredExecutionContext(ExecutionContext):
                         results[response_name] = result
                 else:
 
+                    # Add placeholder so that field order is preserved
+                    results[response_name] = PENDING_FUTURE
+
                     # noinspection PyShadowingNames, PyBroadException
                     def process_result(response_name: str, result: SyncFuture) -> None:
                         nonlocal unresolved
                         awaited_result = result.result()
                         if awaited_result is not Undefined:
                             results[response_name] = awaited_result
+                        else:
+                            del results[response_name]
                         unresolved -= 1
                         if not unresolved:
                             future.set_result(results)

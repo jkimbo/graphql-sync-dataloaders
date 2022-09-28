@@ -335,3 +335,70 @@ def test_deferred_execution_errors():
         ],
     }
     assert mock_load_fn.call_count == 1
+
+
+def test_result_field_ordering():
+    NAMES = {
+        "1": "Sarah",
+        "2": "Lucy",
+        "3": "Geoff",
+        "5": "Dave",
+    }
+
+    def load_fn(keys):
+        return [NAMES[key] for key in keys]
+
+    mock_load_fn = Mock(wraps=load_fn)
+    dataloader = SyncDataLoader(mock_load_fn)
+
+    def resolve_name(_, __, key):
+        return dataloader.load(key)
+
+    def resolve_hello(_, __, name):
+        return f"hello {name}"
+
+    schema = GraphQLSchema(
+        query=GraphQLObjectType(
+            name="Query",
+            fields={
+                "name": GraphQLField(
+                    GraphQLString,
+                    args={
+                        "key": GraphQLArgument(GraphQLString),
+                    },
+                    resolve=resolve_name,
+                ),
+                "hello": GraphQLField(
+                    GraphQLString,
+                    args={
+                        "name": GraphQLArgument(GraphQLString),
+                    },
+                    resolve=resolve_hello,
+                )
+            },
+        )
+    )
+
+    result = graphql_sync_deferred(
+        schema,
+        """
+        query {
+            name1: name(key: "1")
+            hello1: hello(name: "grace")
+            name2: name(key: "2")
+            hello2: hello(name: "lucy")
+        }
+        """,
+    )
+
+    assert not result.errors
+    assert result.data
+    assert result.data == {
+        "name1": "Sarah",
+        "hello1": "hello grace",
+        "name2": "Lucy",
+        "hello2": "hello lucy",
+    }
+    keys = list(result.data.keys())
+    assert keys == ["name1", "hello1", "name2", "hello2"]
+    assert mock_load_fn.call_count == 1
