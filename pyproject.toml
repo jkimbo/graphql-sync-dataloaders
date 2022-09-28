@@ -16,8 +16,8 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 
-[project.urls]
-"Homepage" = "https://github.com/jkimbo/graphql-sync-dataloaders"
+homepage = "https://github.com/jkimbo/graphql-sync-dataloaders"
+repository = "https://github.com/jkimbo/graphql-sync-dataloaders"
 
 [tool.poetry.dependencies]
 python = "^3.8"
