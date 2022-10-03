@@ -91,7 +91,9 @@ class DeferredExecutionContext(ExecutionContext):
                     results[response_name] = PENDING_FUTURE
 
                     # noinspection PyShadowingNames, PyBroadException
-                    def process_result(response_name: str, result: SyncFuture) -> None:
+                    def process_result(
+                        response_name: str, result: SyncFuture, _: None
+                    ) -> None:
                         nonlocal unresolved
                         awaited_result = result.result()
                         if awaited_result is not Undefined:
@@ -150,7 +152,7 @@ class DeferredExecutionContext(ExecutionContext):
                         self._deferred_callbacks.append(callback)
 
                     # noinspection PyShadowingNames
-                    def process_result():
+                    def process_result(_: Any):
                         try:
                             completed = self.complete_value(
                                 return_type, field_nodes, info, path, result.result()
@@ -158,7 +160,7 @@ class DeferredExecutionContext(ExecutionContext):
                             if isinstance(completed, SyncFuture):
 
                                 # noinspection PyShadowingNames
-                                def process_completed():
+                                def process_completed(_: Any):
                                     try:
                                         future.set_result(completed.result())
                                     except Exception as raw_error:
@@ -169,8 +171,9 @@ class DeferredExecutionContext(ExecutionContext):
                                         future.set_result(None)
 
                                 if completed.done():
-                                    process_completed()
+                                    process_completed(completed.result())
                                 else:
+
                                     completed.add_done_callback(process_completed)
                             else:
                                 future.set_result(completed)
@@ -193,7 +196,7 @@ class DeferredExecutionContext(ExecutionContext):
             if isinstance(completed, SyncFuture):
 
                 # noinspection PyShadowingNames
-                def process_completed():
+                def process_completed(_: Any):
                     try:
                         future.set_result(completed.result())
                     except Exception as raw_error:
@@ -202,7 +205,7 @@ class DeferredExecutionContext(ExecutionContext):
                         future.set_result(None)
 
                 if completed.done():
-                    return process_completed()
+                    return process_completed(completed.result())
 
                 future = SyncFuture()
                 completed.add_done_callback(process_completed)
@@ -225,13 +228,13 @@ class DeferredExecutionContext(ExecutionContext):
         if not is_iterable(result):
             if isinstance(result, SyncFuture):
 
-                def process_result():
+                def process_result(_: Any):
                     return self.complete_list_value(
                         return_type, field_nodes, info, path, result.result()
                     )
 
                 if result.done():
-                    return process_result()
+                    return process_result(result.result())
                 future = SyncFuture()
                 result.add_done_callback(process_result)
                 return future
@@ -264,7 +267,10 @@ class DeferredExecutionContext(ExecutionContext):
 
                         # noinspection PyShadowingNames
                         def process_item(
-                            index: int, item: SyncFuture, item_path: Path
+                            index: int,
+                            item: SyncFuture,
+                            item_path: Path,
+                            _: Any,
                         ) -> None:
                             nonlocal unresolved
                             try:
@@ -285,6 +291,7 @@ class DeferredExecutionContext(ExecutionContext):
                                             index: int,
                                             completed: SyncFuture,
                                             item_path: Path,
+                                            _: Any,
                                         ) -> None:
                                             try:
                                                 results[index] = completed.result()
@@ -338,7 +345,10 @@ class DeferredExecutionContext(ExecutionContext):
 
                         # noinspection PyShadowingNames
                         def process_completed(
-                            index: int, completed: SyncFuture, item_path: Path
+                            index: int,
+                            completed: SyncFuture,
+                            item_path: Path,
+                            _: Any,
                         ) -> None:
                             nonlocal unresolved
                             try:

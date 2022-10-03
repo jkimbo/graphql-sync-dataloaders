@@ -42,9 +42,15 @@ class SyncFuture:
         self._callbacks.append(fn)
 
     def set_result(self, result: Any) -> None:
-        self._assert_state(_PENDING)
-        self._result = result
-        self._finish()
+        if self is result:
+            raise TypeError("Cannot resolve future with itself.")
+
+        if isinstance(result, SyncFuture):
+            result.add_done_callback(self.set_result)
+        else:
+            self._assert_state(_PENDING)
+            self._result = result
+            self._finish()
 
     def set_exception(self, exception: Exception) -> None:
         self._assert_state(_PENDING)
@@ -64,4 +70,17 @@ class SyncFuture:
             return
         self._callbacks = []
         for callback in callbacks:
-            callback()
+            callback(self._result)
+
+    def then(self, on_complete: Callable) -> "SyncFuture":
+        ret = SyncFuture()
+
+        def call_and_resolve(v: Any) -> None:
+            try:
+                ret.set_result(on_complete(v))
+            except Exception as e:
+                ret.set_exception(e)
+
+        self.add_done_callback(call_and_resolve)
+
+        return ret
