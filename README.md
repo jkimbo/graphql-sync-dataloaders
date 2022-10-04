@@ -162,6 +162,31 @@ query {
 }
 ```
 
+## Chaining dataloaders
+
+The `SyncDataLoader.load` function returns a `SyncFuture` object which, similar to
+a JavaScript Promise, allows you to chain results together using the
+`then(on_success: Callable)` function.
+
+For example:
+
+```python
+def get_user_name(userId: str) -> str:
+    return user_loader.load(userId).then(lambda user: user["name"])
+```
+
+You can also chain together multiple DataLoader calls:
+
+```python
+def get_best_friend_name(userId: str) -> str:
+    return (
+        user_loader.load(userId)
+        .then(lambda user: user_loader.load(user["best_friend"]))
+        .then(lambda best_friend: best_friend["name"])
+      )
+```
+
+
 ## How it works
 
 This library implements a custom version of the graphql-core
