@@ -1,3 +1,4 @@
+from unittest import mock
 from unittest.mock import Mock
 from functools import partial
 
@@ -374,7 +375,7 @@ def test_result_field_ordering():
                         "name": GraphQLArgument(GraphQLString),
                     },
                     resolve=resolve_hello,
-                )
+                ),
             },
         )
     )
@@ -402,3 +403,83 @@ def test_result_field_ordering():
     keys = list(result.data.keys())
     assert keys == ["name1", "hello1", "name2", "hello2"]
     assert mock_load_fn.call_count == 1
+
+
+def test_chaining_dataloader():
+    USERS = {
+        "1": {
+            "name": "Sarah",
+            "best_friend": "2",
+        },
+        "2": {
+            "name": "Lucy",
+            "best_friend": "3",
+        },
+        "3": {
+            "name": "Geoff",
+        },
+        "5": {
+            "name": "Dave",
+        },
+    }
+
+    def load_fn(keys):
+        return [USERS[key] if key in USERS else None for key in keys]
+
+    mock_load_fn = Mock(wraps=load_fn)
+    dataloader = SyncDataLoader(mock_load_fn)
+
+    def resolve_name(_, __, userId):
+        return dataloader.load(userId).then(lambda user: user["name"])
+
+    def resolve_best_friend_name(_, __, userId):
+        return (
+            dataloader.load(userId)
+            .then(lambda user: dataloader.load(user["best_friend"]))
+            .then(lambda user: user["name"])
+        )
+
+    schema = GraphQLSchema(
+        query=GraphQLObjectType(
+            name="Query",
+            fields={
+                "name": GraphQLField(
+                    GraphQLString,
+                    args={
+                        "userId": GraphQLArgument(GraphQLString),
+                    },
+                    resolve=resolve_name,
+                ),
+                "bestFriendName": GraphQLField(
+                    GraphQLString,
+                    args={
+                        "userId": GraphQLArgument(GraphQLString),
+                    },
+                    resolve=resolve_best_friend_name,
+                ),
+            },
+        )
+    )
+
+    result = graphql_sync_deferred(
+        schema,
+        """
+        query {
+            name1: name(userId: "1")
+            name2: name(userId: "2")
+            bestFriend1: bestFriendName(userId: "1")
+            bestFriend2: bestFriendName(userId: "2")
+        }
+        """,
+    )
+
+    assert not result.errors
+    assert result.data == {
+        "name1": "Sarah",
+        "name2": "Lucy",
+        "bestFriend1": "Lucy",
+        "bestFriend2": "Geoff",
+    }
+    assert mock_load_fn.call_count == 2
+    assert mock_load_fn.call_args_list[0].args[0] == ["1", "2"]
+    assert mock_load_fn.call_args_list[1].args[0] == ["3"]

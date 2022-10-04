@@ -1,7 +1,6 @@
 from typing import (
     Any,
     AsyncIterable,
-    Callable,
     Dict,
     Optional,
     List,
@@ -33,6 +32,7 @@ from graphql.execution.execute import get_field_def
 from graphql.execution.values import get_argument_values
 
 from .sync_future import SyncFuture
+from .sync_dataloader import dataloader_batch_callbacks
 
 
 PENDING_FUTURE = object()
@@ -46,17 +46,12 @@ class DeferredExecutionContext(ExecutionContext):
     is executed and before the result is returned.
     """
 
-    _deferred_callbacks: List[Callable]
-
     def execute_operation(
         self, operation: OperationDefinitionNode, root_value: Any
     ) -> Optional[AwaitableOrValue[Any]]:
-        self._deferred_callbacks = []
         result = super().execute_operation(operation, root_value)
 
-        callbacks = self._deferred_callbacks
-        while callbacks:
-            callbacks.pop(0)()
+        dataloader_batch_callbacks.run_all_callbacks()
 
         if isinstance(result, SyncFuture):
             if not result.done():
@@ -146,10 +141,6 @@ class DeferredExecutionContext(ExecutionContext):
                     )
 
                 else:
-
-                    callback = result.deferred_callback
-                    if callback:
-                        self._deferred_callbacks.append(callback)
 
                     # noinspection PyShadowingNames
                     def process_result(_: Any):
@@ -261,10 +252,6 @@ class DeferredExecutionContext(ExecutionContext):
                             item_type, field_nodes, info, item_path, item.result()
                         )
                     else:
-                        callback = item.deferred_callback
-                        if callback:
-                            self._deferred_callbacks.append(callback)
-
                         # noinspection PyShadowingNames
                         def process_item(
                             index: int,
@@ -339,10 +326,6 @@ class DeferredExecutionContext(ExecutionContext):
                     if completed.done():
                         results[index] = completed.result()
                     else:
-                        callback = completed.deferred_callback
-                        if callback:
-                            self._deferred_callbacks.append(callback)
-
                         # noinspection PyShadowingNames
                         def process_completed(
                             index: int,
