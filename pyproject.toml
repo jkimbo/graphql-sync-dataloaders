@@ -20,11 +20,11 @@ homepage = "https://github.com/jkimbo/graphql-sync-dataloaders"
 repository = "https://github.com/jkimbo/graphql-sync-dataloaders"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 graphql-core = "~3.2.0"
 
 [tool.poetry.group.dev.dependencies]
-Django = "^4.1.1"
+Django = "^3.2"
 strawberry-graphql = "^0.131.5"
 graphene-django = "3.0.0b8"
 pytest = "^7.1.3"

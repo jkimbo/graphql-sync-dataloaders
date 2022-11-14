@@ -481,5 +481,5 @@ def test_chaining_dataloader():
         "bestFriend2": "Geoff",
     }
     assert mock_load_fn.call_count == 2
-    assert mock_load_fn.call_args_list[0].args[0] == ["1", "2"]
-    assert mock_load_fn.call_args_list[1].args[0] == ["3"]
+    assert mock_load_fn.call_args_list[0][0][0] == ["1", "2"]
+    assert mock_load_fn.call_args_list[1][0][0] == ["3"]
