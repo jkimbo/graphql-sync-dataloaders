@@ -1,4 +1,3 @@
-from unittest import mock
 from unittest.mock import Mock
 from functools import partial
 
@@ -483,3 +482,129 @@ def test_chaining_dataloader():
     assert mock_load_fn.call_count == 2
     assert mock_load_fn.call_args_list[0].args[0] == ["1", "2"]
     assert mock_load_fn.call_args_list[1].args[0] == ["3"]
+
+
+def test_loaded_items_are_cached():
+    NAMES = {
+        "1": "Sarah",
+        "2": "Lucy",
+        "3": "Geoff",
+        "5": "Dave",
+    }
+
+    def load_fn(keys):
+        return [NAMES[key] for key in keys]
+
+    mock_load_fn = Mock(wraps=load_fn)
+    dataloader = SyncDataLoader(mock_load_fn)
+
+    # First call causes load
+    dataloader.load("2")
+    dataloader.dispatch_queue()
+    mock_load_fn.assert_called_once_with(["2"])
+
+    # Next call is cached
+    dataloader.load("2")
+    dataloader.dispatch_queue()
+    mock_load_fn.assert_called_once_with(["2"])
+
+    # Call for uncached item causes load
+    dataloader.load("3")
+    dataloader.dispatch_queue()
+
+    assert mock_load_fn.call_count == 2
+    mock_load_fn.assert_called_with(["3"])
+
+
+def test_clear_removes_item_from_cache():
+    NAMES = {
+        "1": "Sarah",
+        "2": "Lucy",
+        "3": "Geoff",
+        "5": "Dave",
+    }
+
+    def load_fn(keys):
+        return [NAMES[key] for key in keys]
+
+    mock_load_fn = Mock(wraps=load_fn)
+    dataloader = SyncDataLoader(mock_load_fn)
+
+    # First call causes load
+    dataloader.load("2")
+    dataloader.dispatch_queue()
+    mock_load_fn.assert_called_once_with(["2"])
+
+    # Next call is cached
+    dataloader.load("2")
+    dataloader.dispatch_queue()
+    mock_load_fn.assert_called_once_with(["2"])
+
+    # First call after clear again causes load
+    dataloader.clear("2")
+    dataloader.load("2")
+    dataloader.dispatch_queue()
+
+    assert mock_load_fn.call_count == 2
+    mock_load_fn.assert_called_with(["2"])
+
+
+def test_clear_all_removes_all_items_from_cache():
+    NAMES = {
+        "1": "Sarah",
+        "2": "Lucy",
+        "3": "Geoff",
+        "5": "Dave",
+    }
+
+    def load_fn(keys):
+        return [NAMES[key] for key in keys]
+
+    mock_load_fn = Mock(wraps=load_fn)
+    dataloader = SyncDataLoader(mock_load_fn)
+
+    # First call causes load
+    dataloader.load("2")
+    dataloader.dispatch_queue()
+    mock_load_fn.assert_called_once_with(["2"])
+
+    # Next call is cached
+    dataloader.load("2")
+    dataloader.dispatch_queue()
+    mock_load_fn.assert_called_once_with(["2"])
+
+    # First call after clear all again causes load
+    dataloader.clear_all()
+    dataloader.load("2")
+    dataloader.dispatch_queue()
+
+    assert mock_load_fn.call_count == 2
+    mock_load_fn.assert_called_with(["2"])
+
+
+def test_prime_inserts_item_in_cache():
+    NAMES = {
+        "1": "Sarah",
+        "2": "Lucy",
+        "3": "Geoff",
+        "5": "Dave",
+    }
+
+    def load_fn(keys):
+        return [NAMES[key] for key in keys]
+
+    mock_load_fn = Mock(wraps=load_fn)
+    dataloader = SyncDataLoader(mock_load_fn)
+
+    # Prime inserts item in cache
+    dataloader.prime("2", "Lucy")
+
+    # Loading primed item doesn't cause read operation
+    dataloader.load("2")
+    dataloader.dispatch_queue()
+    mock_load_fn.assert_not_called()
+
+    # Loading not primed item causes read operation
+    dataloader.load("3")
+    dataloader.dispatch_queue()
+    mock_load_fn.assert_called_once_with(["3"])

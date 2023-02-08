@@ -48,6 +48,12 @@ class SyncDataLoader:
     def clear(self, key):
         self._cache.pop(key, None)
 
+    def clear_all(self):
+        self._cache.clear()
+
+    def prime(self, key, obj):
+        self._cache[key] = obj
+
     def dispatch_queue(self):
         queue = self._queue
         if not queue:
