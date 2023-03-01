@@ -1,39 +1,23 @@
-from typing import (
-    Any,
-    AsyncIterable,
-    Dict,
-    Optional,
-    List,
-    Iterable,
-    Union,
-    cast,
-)
 from functools import partial
+from typing import Any, AsyncIterable, Dict, Iterable, List, Optional, Union, cast
 
 from graphql import (
     ExecutionContext,
     FieldNode,
     GraphQLError,
+    GraphQLList,
     GraphQLObjectType,
     GraphQLOutputType,
     GraphQLResolveInfo,
-    GraphQLList,
     OperationDefinitionNode,
     located_error,
 )
-from graphql.pyutils import (
-    is_iterable,
-    Path,
-    AwaitableOrValue,
-    Undefined,
-)
-
 from graphql.execution.execute import get_field_def
 from graphql.execution.values import get_argument_values
+from graphql.pyutils import AwaitableOrValue, Path, Undefined, is_iterable
 
+from .sync_dataloader import DataloaderBatchCallbacks
 from .sync_future import SyncFuture
-from .sync_dataloader import dataloader_batch_callbacks
-
 
 PENDING_FUTURE = object()
 
@@ -49,9 +33,8 @@ class DeferredExecutionContext(ExecutionContext):
     def execute_operation(
         self, operation: OperationDefinitionNode, root_value: Any
     ) -> Optional[AwaitableOrValue[Any]]:
-        result = super().execute_operation(operation, root_value)
-
-        dataloader_batch_callbacks.run_all_callbacks()
+        with DataloaderBatchCallbacks():
+            result = super().execute_operation(operation, root_value)
 
         if isinstance(result, SyncFuture):
             if not result.done():
