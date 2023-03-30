@@ -1,41 +1,40 @@
-from typing import (
-    Any,
-    AsyncIterable,
-    Dict,
-    Optional,
-    List,
-    Iterable,
-    Union,
-    cast,
-)
 from functools import partial
+from typing import Any, AsyncIterable, Dict, Iterable, List, Optional, Union, cast
 
 from graphql import (
     ExecutionContext,
     FieldNode,
     GraphQLError,
+    GraphQLList,
     GraphQLObjectType,
     GraphQLOutputType,
     GraphQLResolveInfo,
-    GraphQLList,
     OperationDefinitionNode,
     located_error,
 )
-from graphql.pyutils import (
-    is_iterable,
-    Path,
-    AwaitableOrValue,
-    Undefined,
-)
-
 from graphql.execution.execute import get_field_def
 from graphql.execution.values import get_argument_values
+from graphql.pyutils import AwaitableOrValue, Path, Undefined, is_iterable
 
+try:
+    from promise import Promise
+except ImportError:
+    Promise = None
+
+from .sync_dataloader import DataloaderBatchCallbacks
 from .sync_future import SyncFuture
-from .sync_dataloader import dataloader_batch_callbacks
-
 
 PENDING_FUTURE = object()
+
+
+if Promise is not None:
+    def _resolve_promise(obj):
+        while isinstance(obj, Promise):
+            obj = obj.get()
+        return obj
+else:
+    def _resolve_promise(obj):
+        return obj
 
 
 class DeferredExecutionContext(ExecutionContext):
@@ -49,9 +48,8 @@ class DeferredExecutionContext(ExecutionContext):
     def execute_operation(
         self, operation: OperationDefinitionNode, root_value: Any
     ) -> Optional[AwaitableOrValue[Any]]:
-        result = super().execute_operation(operation, root_value)
-
-        dataloader_batch_callbacks.run_all_callbacks()
+        with DataloaderBatchCallbacks():
+            result = super().execute_operation(operation, root_value)
 
         if isinstance(result, SyncFuture):
             if not result.done():
@@ -72,12 +70,12 @@ class DeferredExecutionContext(ExecutionContext):
         unresolved = 0
         for response_name, field_nodes in fields.items():
             field_path = Path(path, response_name, parent_type.name)
-            result = self.execute_field(
-                parent_type, source_value, field_nodes, field_path
-            )
+            result = _resolve_promise(self.execute_field(
+                parent_type, source_value, field_nodes, field_path,
+            ))
             if isinstance(result, SyncFuture):
                 if result.done():
-                    result = result.result()
+                    result = _resolve_promise(result.result())
                     if result is not Undefined:
                         results[response_name] = result
                 else:
@@ -90,7 +88,7 @@ class DeferredExecutionContext(ExecutionContext):
                         response_name: str, result: SyncFuture, _: None
                     ) -> None:
                         nonlocal unresolved
-                        awaited_result = result.result()
+                        awaited_result = _resolve_promise(result.result())
                         if awaited_result is not Undefined:
                             results[response_name] = awaited_result
                         else:
@@ -131,23 +129,25 @@ class DeferredExecutionContext(ExecutionContext):
         info = self.build_resolve_info(field_def, field_nodes, parent_type, path)
         try:
             args = get_argument_values(field_def, field_nodes[0], self.variable_values)
-            result = resolve_fn(source, info, **args)
+            result = _resolve_promise(resolve_fn(source, info, **args))
 
             if isinstance(result, SyncFuture):
 
                 if result.done():
-                    completed = self.complete_value(
-                        return_type, field_nodes, info, path, result.result()
-                    )
-
+                    completed = _resolve_promise(self.complete_value(
+                        return_type, field_nodes, info, path, _resolve_promise(result.result()),
+                    ))
                 else:
-
                     # noinspection PyShadowingNames
                     def process_result(_: Any):
                         try:
-                            completed = self.complete_value(
-                                return_type, field_nodes, info, path, result.result()
-                            )
+                            completed = _resolve_promise(self.complete_value(
+                                return_type,
+                                field_nodes,
+                                info,
+                                path,
+                                _resolve_promise(result.result()),
+                            ))
                             if isinstance(completed, SyncFuture):
 
                                 # noinspection PyShadowingNames
